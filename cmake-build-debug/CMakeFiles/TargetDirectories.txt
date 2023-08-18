@@ -1,0 +1,3 @@
+C:/Users/Utente/PFAPI23_TORTORELLA_10682920/cmake-build-debug/CMakeFiles/PFAPI23_TORTORELLA_10682920.dir
+C:/Users/Utente/PFAPI23_TORTORELLA_10682920/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Utente/PFAPI23_TORTORELLA_10682920/cmake-build-debug/CMakeFiles/rebuild_cache.dir
