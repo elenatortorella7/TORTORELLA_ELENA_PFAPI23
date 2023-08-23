@@ -55,12 +55,6 @@ build CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/pfapi23_10682920.c.obj: C_COMPI
   OBJECT_DIR = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir
   OBJECT_FILE_DIR = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir
 
-build CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/actions.h.c.obj: C_COMPILER__PFAPI23_TORTORELLA_10682920_unscanned_Debug C$:/Users/Utente/PFAPI23_TORTORELLA_10682920/actions.h.c || cmake_object_order_depends_target_PFAPI23_TORTORELLA_10682920
-  DEP_FILE = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir\actions.h.c.obj.d
-  FLAGS = -g -std=gnu11 -fdiagnostics-color=always
-  OBJECT_DIR = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir
-  OBJECT_FILE_DIR = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir
-
 
 # =============================================================================
 # Link build statements for EXECUTABLE target PFAPI23_TORTORELLA_10682920
@@ -69,7 +63,7 @@ build CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/actions.h.c.obj: C_COMPILER__PF
 #############################################
 # Link the executable PFAPI23_TORTORELLA_10682920.exe
 
-build PFAPI23_TORTORELLA_10682920.exe: C_EXECUTABLE_LINKER__PFAPI23_TORTORELLA_10682920_Debug CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/pfapi23_10682920.c.obj CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/actions.h.c.obj
+build PFAPI23_TORTORELLA_10682920.exe: C_EXECUTABLE_LINKER__PFAPI23_TORTORELLA_10682920_Debug CMakeFiles/PFAPI23_TORTORELLA_10682920.dir/pfapi23_10682920.c.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\PFAPI23_TORTORELLA_10682920.dir
