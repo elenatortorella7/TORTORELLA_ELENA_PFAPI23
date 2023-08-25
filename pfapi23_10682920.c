@@ -19,6 +19,7 @@ typedef struct tStation {
 
 } tStation;
 
+// stampa l'autostrada,funzione per il check
 
 void inorderTraversal(tStation *root) {
     if (root != NULL) {
@@ -32,17 +33,15 @@ void inorderTraversal(tStation *root) {
 //ricerca di una stazione  ( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
 
 tStation *searchStation(tStation *root, int distance) {
-    // Caso base: l'albero è vuoto o la chiave è stata trovata nella radice
+
     if (root == NULL || root->distance == distance) {
         return root;
     }
 
-    // Se la chiave è minore della chiave della radice, cerca nel sottoalbero sinistro
     if (distance < root->distance) {
         return searchStation(root->left, distance);
     }
 
-    // Altrimenti, cerca nel sottoalbero destro
     return searchStation(root->right, distance);
 }
 
@@ -52,16 +51,12 @@ tStation *searchStation(tStation *root, int distance) {
 int* searchCar(int *autonomies,int numCars,int autonomy){
     for (int i = 0; i < numCars; i++) {
         if (autonomies[i] == autonomy) {
-            return &autonomies[i]; // Restituisce l'indice dell'elemento trovato
+            return &autonomies[i];
         }
     }
     return NULL;
 
 }
-
-// void
-
-
 
 // creazione della Stazione
 
@@ -95,12 +90,16 @@ tStation *insert(tStation *root, int distance,int numCars,int aut[]) {
     return root;
 }
 
+//funzione ausiliaria trova minimo
+
 tStation *findMin(tStation *node) {
     while (node->left != NULL) {
         node = node->left;
     }
     return node;
 }
+
+//funzione ausiliaria per eliminare la stazione dall'autostrada
 
 tStation *deleteStation(tStation *root, int distance) {
     if (root == NULL) {
@@ -152,12 +151,7 @@ void addStn(tStation* root, int distance,int numCars,int aut[]) {
 }
 
 
-
-
-
-
-
-
+// demolisci stazione (successivamente incorporare delete in questa funzione)
 void demStn(tStation* root,int distance){
 
     if(searchStation(root,distance)==NULL){
@@ -169,6 +163,8 @@ void demStn(tStation* root,int distance){
 
 }
 
+//funzione aggiungi macchina
+
 void addCar(tStation *root, int distance,int aut) {
 
     tStation * station = searchStation(root,distance);
@@ -178,11 +174,10 @@ void addCar(tStation *root, int distance,int aut) {
     }
 
     else {
-
-        station->numCars++; // Incrementa la dimensione dell'array
+        station->numCars++;
         station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
         if (station->autonomies != NULL) {
-            station->autonomies[station->numCars - 1] = aut; // Aggiunge l'elemento all'array
+            station->autonomies[station->numCars - 1] = aut;
             printf("aggiunta\n");
         }
 
@@ -200,7 +195,7 @@ void scrCar(tStation *root, int distance, int aut) {
          if(srcCar==NULL){
         printf("non rottamata");
     }else {
-        int index = srcCar - station->autonomies; // Calcola l'indice dell'elemento da eliminare
+        int index = srcCar - station->autonomies;
 
                  if (index< 0 || index >= station->numCars) {
                      printf("Indice non valido.\n");
@@ -208,10 +203,10 @@ void scrCar(tStation *root, int distance, int aut) {
                  }
 
                  for (int i = index; i < station->numCars - 1; i++) {
-                     (station->autonomies)[i] = (station->autonomies)[i + 1]; // Sposta gli elementi successivi
+                     (station->autonomies)[i] = (station->autonomies)[i + 1];
                  }
 
-                 (station->numCars)--; // Riduci la lunghezza dell'array di 1
+                 (station->numCars)--;
 
                  station->autonomies = realloc(station->autonomies, sizeof(int) * (station->numCars)); // Rialloca la memoria con la nuova dimensione
 
@@ -219,10 +214,10 @@ void scrCar(tStation *root, int distance, int aut) {
         }
 
     }
-
-
-
 }
+
+
+//pianiifica rotta
 
 void plnRoute(tStation *root, int startDis, int endDis) {
     printf("nessun percorso");
