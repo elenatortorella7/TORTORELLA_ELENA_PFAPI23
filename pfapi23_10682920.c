@@ -1,422 +1,277 @@
+
+// Created by Utente on 24/08/2023.
+//
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <limits.h>
+
+
+//struttura nodo dell'albero
+
+typedef struct tStation {
+    int distance;       // Distanza dalla partenza dell'autostrada chiave
+    int numCars;        // Num di macchine disponibili
+    int *autonomies;    // puntatore ad array di autonomie
+    struct tStation *left; // puntatore a figlio sin
+    struct tStation *right;   // punt a ramo destro
+
+} tStation;
+
+
+void inorderTraversal(tStation *root) {
+    if (root != NULL) {
+        inorderTraversal(root->left);
+        printf("%d ", root->distance);
+        inorderTraversal(root->right);
+    }
+}
+
+
+//ricerca di una stazione  ( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
+
+tStation *searchStation(tStation *root, int distance) {
+    // Caso base: l'albero è vuoto o la chiave è stata trovata nella radice
+    if (root == NULL || root->distance == distance) {
+        return root;
+    }
+
+    // Se la chiave è minore della chiave della radice, cerca nel sottoalbero sinistro
+    if (distance < root->distance) {
+        return searchStation(root->left, distance);
+    }
+
+    // Altrimenti, cerca nel sottoalbero destro
+    return searchStation(root->right, distance);
+}
+
+// void
 
 
 
-/*
+// creazione della Stazione
 
-#define MAX_CMD_LEN 32
-static const char *addStnCmd    = "aggingi-stazione ";
-static const char *demStnCmd = "demolisci-stazione";
-static const char *addCarCmd   = "aggiungi-auto";
-static const char *scrCarCmd    = "rottama-auto";
-static const char *plnRuteCmd = "pianifica-percorso";  */
+tStation *createStation(int distance, int numCars, const int autonomy[]) {
 
-typedef struct{
-    int aut;  //autonomia auto
-}Car;
+    tStation *newStation = (tStation *)malloc(sizeof(tStation));
+    newStation->distance = distance;
+    newStation->numCars = numCars;
+    newStation->autonomies = (int *)malloc(sizeof(int) * numCars);
+    for (int i = 0; i < numCars; i++) {
+        newStation->autonomies[i] = autonomy[i];
+    }
+    newStation->left = newStation->right = NULL;
+    return newStation;
 
-typedef struct{
-    int distance;   // distanza dall'inizio univoca
-    int nCar;       // numero di macchine disponibili
-    Car car[512];    // massimo numero di macchine per stazione
-}Station;
+}
 
-/*typedef struct {
-    int distance;
-    int numStations;
-    Station *stations;
-} Highway;                              // insieme delle stazioni   */
+//inserimento della Stazione nell'autostrada
 
-
-// tree   + creazione di una coda per la ricerca in ampiezza
-
-typedef struct tNode {
-    int distance; // Distanza dalla partenza dell'autostrada
-    int numCars; // Num di macchine disponibili
-    int *autonomies; // puntatore ad array di autonomie
-    struct tNode *left;
-    struct tNode *right;
-    struct tNode *parent;
-} tNode;
-
-
-typedef struct qNode {
-    tNode *node;
-    int numSteps;
-    struct qNode *next;
-} qNode;    //quequenode
-
-
-// inserimento
-
-tNode *insert(tNode *root, int distance, int numCars, int *autonomy, tNode *parent) {
+tStation *insert(tStation *root, int distance,int numCars,int aut[]) {
     if (root == NULL) {
-        tNode *newNode = (tNode *)malloc(sizeof(tNode));
-        newNode->distance = distance;
-        newNode->numCars = numCars;
-        newNode->autonomies = (int *)malloc(sizeof(int) * numCars);
-        for (int i = 0; i < numCars; i++) {
-            newNode->autonomies[i] = autonomy[i];
-        }
-        newNode->left = newNode->right = NULL;
-        newNode->parent = parent; // Imposta il riferimento al nodo padre
-        return newNode;
+        return createStation(distance, numCars, aut);
     }
 
     if (distance < root->distance) {
-        root->left = insert(root->left, distance, numCars, autonomy, root);
+        root->left = insert(root->left, distance,numCars,aut);
     } else if (distance > root->distance) {
-        root->right = insert(root->right, distance, numCars, autonomy, root);
+        root->right = insert(root->right, distance,numCars,aut);
     }
 
     return root;
 }
 
-
-// ricerca valore minimo
-
-
-tNode *findMin(tNode *node) {
+tStation *findMin(tStation *node) {
     while (node->left != NULL) {
         node = node->left;
     }
     return node;
-};
+}
 
-
-// eliminazione del nodo
-
-tNode *deleteNode(tNode *root, int distance) {
+tStation *deleteStation(tStation *root, int distance) {
     if (root == NULL) {
         return root;
     }
 
-    // Esegui la ricerca del nodo da eliminare
     if (distance < root->distance) {
-        root->left = deleteNode(root->left, distance);
+        root->left = deleteStation(root->left, distance);
     } else if (distance > root->distance) {
-        root->right = deleteNode(root->right, distance);
+        root->right = deleteStation(root->right, distance);
     } else {
 
         // Il nodo con il valore specifico è stato trovato, procedi all'eliminazione
         if (root->left == NULL) {
-            tNode *temp = root->right;
-            if (temp != NULL) {
-                temp->parent = root->parent;
-            }
+            tStation *temp = root->right;
             free(root);
             return temp;
         } else if (root->right == NULL) {
-            tNode *temp = root->left;
-            if (temp != NULL) {
-                temp->parent = root->parent;
-            }
+            tStation *temp = root->left;
+
             free(root);
             return temp;
         }
 
-        tNode *temp = findMin(root->right);
+        tStation *temp = findMin(root->right);
         root->distance = temp->distance;
         root->numCars = temp->numCars;
         root->autonomies = temp->autonomies;
 
-        root->right = deleteNode(root->right, temp->distance);
+        root->right = deleteStation(root->right, temp->distance);
     }
     return root;
 }
 
 
 
-// ricerca del nodo
 
-tNode *search(tNode *root, int disVal) {
-    if (root == NULL || root->distance == disVal) {
-        return root;
-    }
 
-    if (disVal < root->distance) {
-        return search(root->left, disVal);
+void addStn(tStation* root, int distance,int numCars,int aut[]) {
+
+    if(searchStation(root,distance)==NULL) {
+
+        tStation *newStation = NULL;
+        newStation = createStation(distance, numCars, aut);
+        insert(root, newStation->distance,numCars,aut);
+        printf("aggiunta\n");
+    } else printf("non aggiunta\n");
+
+}
+
+
+
+
+
+
+
+
+void demStn(tStation* root,int distance){
+
+    if(searchStation(root,distance)==NULL){
+        printf("non demolita\n");
     } else {
-        return search(root->right, disVal);
+        deleteStation(root, distance);
+        printf("demolita");
     }
+
 }
 
+void addCar(tStation *root, int distance,int aut) {
 
-// gestione coda
+    tStation * station = searchStation(root,distance);
 
-
-qNode *createQueue() {
-    return NULL;
-}
-
-// Verifica se la coda è vuota
-bool isEmpty(qNode *queue) {
-    return queue == NULL;
-}
-
-// Inserisce un nodo in coda alla coda
-void enqueue(qNode **queue, tNode *node, int numSteps) {
-    qNode *newNode = malloc(sizeof(qNode));
-    newNode->node = node;
-    newNode->numSteps = numSteps;
-    newNode->next = NULL;
-
-    if (*queue == NULL) {
-        *queue = newNode;
-    } else {
-        qNode *current = *queue;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = newNode;
-    }
-}
-
-// Rimuove e restituisce il nodo in testa alla coda
-qNode *dequeue(qNode **queue) {
-    if (*queue == NULL) {
-        return NULL;
-    }
-    qNode *frontNode = *queue;
-    *queue = (*queue)->next;
-    return frontNode;
-}
-
-
- //funzione che trova il percorso più breve
-
-void findShortestRoute(tNode *root, tNode *startNode, tNode *endNode) {
-
-    qNode *queue = NULL;
-    enqueue(&queue, startNode, 0);
-
-    int *srtstRoute = NULL;
-    int srtstRouteLngth = INT_MAX;
-    tNode *nrstStnToZero = NULL;
-
-    while (!isEmpty(queue)) {
-        qNode *curr = dequeue(&queue);
-        tNode *node = curr->node;
-        int numSteps = curr->numSteps;
-
-        if (node == endNode) {
-            int *route = malloc(sizeof(int) * (numSteps + 1));
-            int routeLngth = 0;
-
-            tNode *currentRouteNode = endNode;
-            while (currentRouteNode != startNode) {
-                route[routeLngth++] = currentRouteNode->distance;
-                currentRouteNode = currentRouteNode->parent;
-            }
-            route[routeLngth++] = startNode->distance;
-
-            if (routeLngth < srtstRouteLngth ||
-                (routeLngth == srtstRouteLngth && route[1] < nrstStnToZero->distance)) {
-                free(srtstRoute);
-                srtstRoute = route;
-                srtstRouteLngth = routeLngth;
-                nrstStnToZero = search(root, route[1]);
-            } else {
-                free(route);
-            }
-
-            continue;
-        }
-
-        for (int i = 0; i < node->numCars; i++) {
-            int nextDistance = node->distance + node->autonomies[i];
-            tNode *nextNode = search(root, nextDistance);
-            if (nextNode != NULL) {
-                enqueue(&queue, nextNode, numSteps + 1);
-                nextNode->parent = node; // Aggiungi il collegamento al padre
-            }
-        }
-
-        free(curr);
+    if (station==NULL) {
+        printf("non aggiunta\n");
     }
 
-    if (srtstRoute != NULL) {
-        for (int i = srtstRouteLngth - 1; i >= 0; i--) {
-            printf("%d ", srtstRoute[i]);
-        }
-        printf("\n");
-        free(srtstRoute);
-    } else {
-        printf("nessun percorso");
-    }
-}
+    else {
 
-
-
-void addStn(tNode *root,int distance, int numCars, int *aut ){
-   if( search(root, distance) == NULL) {
-       *insert(root, distance, numCars, aut,root);
-       printf("aggiunta");
-   }
-   else printf("non aggiunta");
-
-};
-
-void demStn(tNode *root , int distance){
-    if( search(root, distance) == NULL) {
-        printf("non demolita");
-    }
-        else {
-            *deleteNode(root, distance);
-            printf("demolita");
-        }
-
-
-};
-
-// creare la funzione che aggiunge le macchine
-
-
-
-
-void addCar(tNode *root,int distance,int aut){
-
-    tNode *station= search(root,distance);
-    int numCars= station->numCars;
-
-    if( search(root, distance) == NULL || numCars==512){
-        printf("non aggiunta");
-    }
-    else{
-            station->numCars++; // Incrementa la dimensione dell'array
+        station->numCars++; // Incrementa la dimensione dell'array
         station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
-        if (station->autonomies!= NULL) {
-            station->autonomies[station->numCars - 1] = aut;                        // Aggiunge l'elemento all'array
+        if (station->autonomies != NULL) {
+            station->autonomies[station->numCars - 1] = aut; // Aggiunge l'elemento all'array
+            printf("aggiunta\n");
         }
-    }
-        printf("non aggiunta");
-};
-
-
-
-
-// funzione che cerca un valore autonomia nell'array
-
-bool searchAut(int array[], int size, int aut) {
-    for (int i = 0; i < size; i++) {
-        if (array[i] == aut) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void removeAut(int *array, int size, int autToRemove) {
-    int found = 0;
-    for (int i = 0; i < size; i++) {
-        if (!found && array[i] == autToRemove) {
-            found = 1;
-        }
-        if (found && i < size - 1) {
-            array[i] = array[i + 1]; // Sposta gli elementi successivi a sinistra
-        }
-    }
-    if (found) {
-        (size)--;
-    }
-}
-
-
-void scrCar(tNode *root, int distance, int aut){
-
-    tNode *station= search(root,distance);
-
-    if(search(root, distance) == NULL || searchAut(station->autonomies,station->numCars,aut)==false){
-        printf("non rottamata");
-        }
-    else if (station->distance== distance && searchAut(station->autonomies,station->numCars,aut)==true) {
-
-        removeAut(station->autonomies,station->numCars,aut);
-
-        printf("rottamata");
-     }
-
-};
-
-void pltRoute(tNode *root, int startDist,int endDist) {
-
-    tNode *startNode = search(root, startDist);
-    tNode *endNode = search(root, endDist);
-    if (startNode == NULL || endNode == NULL) {
-        printf("nessun percorso");
-    } else
-
-    {
-        findShortestRoute(root, startNode, endNode);   //funzione che trova la rotta e la stampa
 
     }
 }
 
 
+void scrCar(tStation *root, int distance, int aut) {
+    tStation * station = searchStation(root,distance);
 
-int main(int argc, char *argv[]){
+    if (station==NULL) {
+        printf("non rottamata \n");
+    }
 
-    tNode *root = NULL;
+    else {
 
-    // Creazione della radice con valore 0 e nessuna macchina
-    int initDist = 0;
-    int initNumCars = 0;
-    int *initAutonomy = NULL;
+        /* int* eliminaElementoDaArray(int *array, int *lunghezza, int indiceDaEliminare) {
+             if (indiceDaEliminare < 0 || indiceDaEliminare >= *lunghezza) {
+                 printf("Indice non valido.\n");
+                 return array;
+             }
 
-    root = insert(root, initDist, initNumCars, initAutonomy,NULL);
+             for (int i = indiceDaEliminare; i < (*lunghezza) - 1; i++) {
+                 array[i] = array[i + 1]; // Sposta gli elementi successivi
+             }
 
+             (*lunghezza)--; // Riduci la lunghezza dell'array di 1
 
+             return realloc(array, sizeof(int) * (*lunghezza)); // Rialloca la memoria con la nuova dimensione
+         }
 
-    FILE *file_input = fopen("comandi.txt", "r");
-
-        if (file_input == NULL) {
-            printf("Impossibile aprire il file\n");
-            return 1;
+         */
+        station->numCars--; // Incrementa la dimensione dell'array
+        station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
+        if (station->autonomies != NULL) {
+            station->autonomies[station->numCars - 1] = aut; // Aggiunge l'elemento all'array
+            printf("aggiunta\n");
         }
 
-        char riga[100];
-        while (fgets(riga, sizeof(riga), file_input) != NULL) {
-            char cmd[30];   //dim max cmd
-            int par[520]; // Supponiamo un massimo di 10 parametri
-            int num_par = 0;
+    }
 
-            //lettura comandi e parametri
 
-            if (sscanf(riga, "%s", cmd) == 1) {
-                char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignora il comando e leggi il resto
+    printf("rottamata");
+}
 
-                while (token != NULL && num_par < 520) {
-                    if (sscanf(token, "%d", &par[num_par]) == 1) {
-                        num_par++;
-                    }
-                    token = strtok(NULL, " \t\n");
+void plnRoute(tStation *root, int startDis, int endDis) {
+    printf("nessun percorso");
+}
+
+
+int main() {
+
+    tStation *root = NULL;    //inizializzo la radice a null
+    root = createStation(0, 0, NULL);
+
+    char riga[100];
+    while (fgets(riga, sizeof(riga), stdin) != NULL) {
+        char cmd[30];   //dim max cmd
+        int par[520]; // Supponiamo un massimo di 10 parametri
+        int num_par = 0;
+
+        //lettura comandi e parametri
+
+        if (sscanf(riga, "%s", cmd) == 1) {
+            char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignora il comando e leggi il resto
+
+            while (token != NULL && num_par < 520) {
+                if (sscanf(token, "%d", &par[num_par]) == 1) {
+                    num_par++;
                 }
+                token = strtok(NULL, " \t\n");
+            }
 
-                // Esegui operazioni basate sul comando
-                if (strcmp(cmd, "aggiungi-stazione") == 0) {
-                    addStn(root,par[0], par[1], &par[2]);
-                } else if (strcmp(cmd, "demolisci-stazione") == 0) {
-                    demStn(root,par[0]);
-                } else if (strcmp(cmd, "pianifica-percorso") == 0) {
-                    pltRoute(root,par[0], par[1]);
-                } else if (strcmp(cmd, "rottama-auto") == 0) {
-                    scrCar(root,par[0], par[1]);
-                } else if (strcmp(cmd, "aggiungi-auto") == 0) {
-                    addCar(root,par[0], par[1]);
-                } else {
-                    printf("Comando sconosciuto: %s\n", cmd);
+
+
+            //Esegui operazioni basate sul comando
+            if (strcmp(cmd, "aggiungi-stazione") == 0) {
+
+                int aut[512]; // Supponiamo che l'array di autonomie abbia al massimo 512
+                for (int i = 0; i < par[1]; i++) {
+                    aut[i] = par[i + 2];
                 }
+                addStn(root, par[0], par[1], aut);
+            } else if (strcmp(cmd, "demolisci-stazione") == 0) {
+                demStn(root, par[0]);
+            } else if (strcmp(cmd, "pianifica-percorso") == 0) {
+                plnRoute(root, par[0], par[1]);
+            } else if (strcmp(cmd, "rottama-auto") == 0) {
+                scrCar(root, par[0], par[1]);
+            } else if (strcmp(cmd, "aggiungi-auto") == 0) {
+                addCar(root, par[0], par[1]);
+            } else if (strcmp(cmd, "stampa-albero") == 0) {
+                inorderTraversal(root);
+            } else if (strcmp(cmd, "quit") == 0) {
+                exit(0);
+            } else {
+                printf("Comando sconosciuto: %s\n", cmd);
             }
         }
+    }
 
-        fclose(file_input);
+    return 0;
 
-
-        return 0;
 
 }
