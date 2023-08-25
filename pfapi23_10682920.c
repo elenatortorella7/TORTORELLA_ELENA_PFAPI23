@@ -46,6 +46,19 @@ tStation *searchStation(tStation *root, int distance) {
     return searchStation(root->right, distance);
 }
 
+
+//funzione che cerca l'autonomia e ne ritorna il puntatore a intero
+
+int* searchCar(int *autonomies,int numCars,int autonomy){
+    for (int i = 0; i < numCars; i++) {
+        if (autonomies[i] == autonomy) {
+            return &autonomies[i]; // Restituisce l'indice dell'elemento trovato
+        }
+    }
+    return NULL;
+
+}
+
 // void
 
 
@@ -179,40 +192,36 @@ void addCar(tStation *root, int distance,int aut) {
 
 void scrCar(tStation *root, int distance, int aut) {
     tStation * station = searchStation(root,distance);
-
-    if (station==NULL) {
-        printf("non rottamata \n");
-    }
-
+    if(station==NULL){
+        printf("non rottamata");}
     else {
+         int* srcCar =  searchCar(station->autonomies,station->numCars,aut);
 
-        /* int* eliminaElementoDaArray(int *array, int *lunghezza, int indiceDaEliminare) {
-             if (indiceDaEliminare < 0 || indiceDaEliminare >= *lunghezza) {
-                 printf("Indice non valido.\n");
-                 return array;
-             }
+         if(srcCar==NULL){
+        printf("non rottamata");
+    }else {
+        int index = srcCar - station->autonomies; // Calcola l'indice dell'elemento da eliminare
 
-             for (int i = indiceDaEliminare; i < (*lunghezza) - 1; i++) {
-                 array[i] = array[i + 1]; // Sposta gli elementi successivi
-             }
+                 if (index< 0 || index >= station->numCars) {
+                     printf("Indice non valido.\n");
+                     return;
+                 }
 
-             (*lunghezza)--; // Riduci la lunghezza dell'array di 1
+                 for (int i = index; i < station->numCars - 1; i++) {
+                     (station->autonomies)[i] = (station->autonomies)[i + 1]; // Sposta gli elementi successivi
+                 }
 
-             return realloc(array, sizeof(int) * (*lunghezza)); // Rialloca la memoria con la nuova dimensione
-         }
+                 (station->numCars)--; // Riduci la lunghezza dell'array di 1
 
-         */
-        station->numCars--; // Incrementa la dimensione dell'array
-        station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
-        if (station->autonomies != NULL) {
-            station->autonomies[station->numCars - 1] = aut; // Aggiunge l'elemento all'array
-            printf("aggiunta\n");
+                 station->autonomies = realloc(station->autonomies, sizeof(int) * (station->numCars)); // Rialloca la memoria con la nuova dimensione
+
+             printf("rottamata");
         }
 
     }
 
 
-    printf("rottamata");
+
 }
 
 void plnRoute(tStation *root, int startDis, int endDis) {
