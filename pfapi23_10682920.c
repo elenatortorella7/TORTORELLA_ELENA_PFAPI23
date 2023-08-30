@@ -23,23 +23,46 @@ typedef struct tStation {
 //strct nodo del grafo
 
 struct routeNode {
-    int station;   //univoco
-    int weight;    //peso
+    int distance;   //univoco
+   // struct Edge* edges;
+  //  int weight;
     struct routeNode* next;   //puntatore al prossimo nodo
 };
 
+/*struct Edge {
+    struct Node* target;
+    struct Edge* next;
+};
+
+ */
+
+
+/*
+struct Route{
+    int length;
+    struct routeNode** stations;
+};
+*/
 
 
 
 // stampa l'autostrada,funzione per il check
-
 void inorderTraversal(tStation *root) {
     if (root != NULL) {
         inorderTraversal(root->left);
-        printf("%d ", root->distance);
+        printf("il nodo è: %d il suo precedente é %p, il suo successivo è: %p\n ", root->distance,(void*)root->left,(void*) root->right);
         inorderTraversal(root->right);
     }
 }
+
+void inorderTraversalFromNodeDescending(tStation *node) {
+    if (node != NULL) {
+        inorderTraversalFromNodeDescending(node->right);
+        printf("%d ", node->distance);
+        inorderTraversalFromNodeDescending(node->left);
+    }
+}
+
 
 
 //ricerca di una stazione  ( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
@@ -55,6 +78,12 @@ tStation *searchStation(tStation *root, int distance) {
     }
 
     return searchStation(root->right, distance);
+}
+
+void provaStampaContrario(tStation *root,int distance){
+    tStation *node =searchStation(root,distance);
+    inorderTraversalFromNodeDescending(node);
+
 }
 
 
@@ -89,6 +118,7 @@ tStation *createStation(int distance, int numCars, const int autonomy[]) {
 //inserimento della Stazione nell'autostrada
 
 tStation *insert(tStation *root, int distance,int numCars,int aut[]) {
+
     if (root == NULL) {
         return createStation(distance, numCars, aut);
     }
@@ -100,6 +130,8 @@ tStation *insert(tStation *root, int distance,int numCars,int aut[]) {
     }
 
     return root;
+
+
 }
 
 //funzione ausiliaria trova minimo
@@ -170,7 +202,7 @@ void demStn(tStation* root,int distance){
         printf("non demolita\n");
     } else {
         deleteStation(root, distance);
-        printf("demolita");
+        printf("demolita\n");
     }
 
 }
@@ -203,12 +235,12 @@ void addCar(tStation *root, int distance,int aut) {
 void scrCar(tStation *root, int distance, int aut) {
     tStation * station = searchStation(root,distance);
     if(station==NULL){
-        printf("non rottamata");}
+        printf("non rottamata\n");}
     else {
          int* srcCar =  searchCar(station->autonomies,station->numCars,aut);
 
          if(srcCar==NULL){
-        printf("non rottamata");
+        printf("non rottamata\n");
     }else {
         int index = srcCar - station->autonomies;
 
@@ -224,61 +256,19 @@ void scrCar(tStation *root, int distance, int aut) {
              // Rialloca la memoria con la nuova dimensione
                  station->autonomies = realloc(station->autonomies, sizeof(int) * (station->numCars));
 
-             printf("rottamata");
+             printf("rottamata\n");
         }
 
     }
 }
 
 
-// definizione della struttura di nodo del grafo
-
-struct routeNode* createRouteNode(int station) {
-    struct routeNode* newRouteNode = (struct routeNode*)malloc(sizeof(struct routeNode));
-    newRouteNode->station = station;
-    newRouteNode->next = NULL;
-   newRouteNode->weight= 0;
-    return newRouteNode;
-}
-
-/*
-int findMax(int a[], int s) {
-    int max = a[0]; // Assume che il primo elemento sia il massimo
-
-    for (int i = 1; i < s; i++) {
-        if (a[i] > max) {
-            max = a[i];
-        }
-    }
-
-    return max;
-}
-*/
 
 
-void addEdge(struct routeNode* src, int dst, int weight ) {
+//funzione che controlla la raggiungibilità
 
-    struct routeNode* newNode = createRouteNode(dst);
-    newNode->weight = weight;
-    newNode->next = src->next;
-    src->next = newNode;
-}
+bool reachable(tStation *root, int src,int dst) {
 
-
-    //assegna i pesi
-    int calculateWeight(int src,int dst) {
-
-    int weight;
-        if (src<dst) {
-                    weight = dst;
-                } else  {
-                    weight = src;
-                }
-        return weight;
-    }
-
-
-    bool reachable(tStation *root, int src,int dst) {
     tStation *srcStation = searchStation(root, src);
     tStation *dstStation = searchStation(root, dst);
 
@@ -291,6 +281,7 @@ void addEdge(struct routeNode* src, int dst, int weight ) {
     int *autonomies = srcStation->autonomies;
 
     if (numCars <= 0) {
+
         return false;
     }
 
@@ -301,159 +292,150 @@ void addEdge(struct routeNode* src, int dst, int weight ) {
             max = autonomies[i];
         }
     }
-        if (max >= effDist) {
-            return true;
-        }
+    if (max >= effDist) {
+
+        return true;
+    }
+
         return false;
-    }
 
-
-
-//funziona che crea il grafo con le Stazioni come nodi a partire dall'albero
-
-
-    void createRoutes(struct tStation* root, struct routeNode* routes[], int max) {
-
-        for (int i = 0; i < max; i++) {
-            if (routes[i] != NULL) {
-                for (int j = i + 1; j < max; j++) {
-                    if (routes[j] != NULL) {
-
-                        if (reachable(root, routes[i]->station, routes[j]->station) == true) {
-                            int weight = calculateWeight(routes[i]->station, routes[j]->station);
-
-                            addEdge(routes[i], routes[j]->station, weight);
-
-                            //  addEdge(routes[j], routes[i]->station, weight);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
-            /*
-int minDistance(int const dist[], bool const visited[],int nNodes) {
-    int min = INT_MAX;
-    int minIndex = -1;
-
-    for (int v = 0; v < nNodes; v++) {
-        if (!visited[v] && dist[v] <= min) {
-            min = dist[v];
-            minIndex = v;
-        }
-    }
-
-    return minIndex;
 }
 
 
-void printPath(int parent[], int j) {
-    if (parent[j] == -1) {
-        printf("%d ", j);
-        return;
-    }
 
-    printPath(parent, parent[j]);
-    printf("%d ", j);
-}  */
+struct tStation* findNextStop(struct tStation *root,struct tStation *currNode, struct tStation* nextNodeMin, int start, int dst) {
 
-void findShortestPath(struct routeNode* routes[], int src, int dst, int max) {
 
-    int dist[max];     // Array per le distanze minime
-    int prev[max];     // Array per tenere traccia del percorso precedente
-    bool visited[max]; // Array per tenere traccia dei nodi visitati
+        if (currNode != NULL) {
+            nextNodeMin = findNextStop(root,currNode->right, nextNodeMin, start, dst);
 
-    // Inizializzazione
-    for (int i = 0; i < max; i++) {
-        dist[i] = INT_MAX;
-        prev[i] = -1;
-        visited[i] = false;
-    }
-
-    dist[src] = 0;
-
-    for (int count = 0; count < max - 1; count++) {
-        int u = -1;
-        int minDist = INT_MAX;
-
-        // Trova il nodo non visitato con la distanza minima
-        for (int i = 0; i < max; i++) {
-            if (!visited[i] && dist[i] < minDist) {
-                u = i;
-                minDist = dist[i];
-            }
-        }
-        if (u == -1) {
-            break; // Tutti i nodi raggiungibili sono stati visitati
-        }
-
-        visited[u] = true;
-
-        struct routeNode* node = routes[u]->next;
-        while (node != NULL) {
-            int stn = node->station;
-            int weight = node->weight;
-
-            if (!visited[stn] && dist[u] != INT_MAX && dist[u] + weight < dist[stn]) {
-                dist[stn] = dist[u] + weight;
-                prev[stn] = u;
+            if ((currNode->distance < dst) && (currNode->distance >= start) && (reachable(root,currNode->distance, dst) == true)
+                                            && (nextNodeMin == NULL || currNode->distance < nextNodeMin->distance)) {
+                nextNodeMin = currNode;
+              //  printf("%d ",nextNodeMin->distance);
             }
 
-            node = node->next;
+            nextNodeMin = findNextStop(root,currNode->left, nextNodeMin, start, dst);
         }
+
+        return nextNodeMin;
     }
 
-    // Costruisci il percorso migliore
-    int curr = dst;
-    while (prev[curr] != -1) {
-        printf("%d ", curr);
-        curr = prev[curr];
+
+struct tStation* findNextStopReverse(struct tStation *root,struct tStation *currNode, struct tStation* nextNodeMin, int start, int dst) {
+
+
+    if (currNode != NULL) {
+        nextNodeMin = findNextStop(root,currNode->right, nextNodeMin, start, dst);  //li devo invertire alla chiamata
+
+        if ((currNode->distance < dst) && (currNode->distance >= start) && (reachable(root, dst,currNode->distance) == true)
+            && (nextNodeMin == NULL || currNode->distance < nextNodeMin->distance)) {
+            nextNodeMin = currNode;
+            //  printf("%d ",nextNodeMin->distance);
+        }
+
+        nextNodeMin = findNextStop(root,currNode->left, nextNodeMin, start, dst);
     }
-    printf("%d\n", src);
+
+    return nextNodeMin;
 }
+
+
+void fillpath(int* route,int index,int station) {
+
+    route[index] =station;
+
+}
+
 
 void plnRoute(tStation *root, int startDist, int endDist) {
 
     tStation *startStation = searchStation(root, startDist);
     tStation *endStation = searchStation(root, endDist);
 
-    int max=0;
+    int max;
+    max = abs(endDist - startDist);
+    int index = 0;
+    int stationStop = endDist;
+    int found = 1;
+
+
     if (startStation == NULL || endStation == NULL) {
         printf("nessun percorso\n");
     } else {
 
+        if (startDist < endDist) {
 
-        if (startStation->distance <= endStation->distance) {
-            max = endStation->distance;
-        } else
-            max = startStation->distance;
+
+            int *route = (int *) malloc(max * sizeof(int));
+
+            struct tStation *stop = endStation;
+
+
+            while (stop->distance >= startDist) {
+                stop = findNextStop(root, root, NULL, startDist, stationStop);
+                if (stop == NULL) {
+                    printf("nessun percorso\n");
+                    found = 0;
+                    break;         // se non trovo nodi stampo nessun percorso ed esco
+
+                }
+                if (stop->distance == startDist) {
+                    stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
+                    fillpath(route, index, stationStop);            //riempo l'array
+                    break;
+                }
+                stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
+                fillpath(route, index, stationStop);            //riempo l'array
+                index = index + 1;
+            }
+
+            if (found == 1) {
+               // printf("%d ", startDist);
+                for (int i = index; i >= 0; i--) {
+                    printf("%d ", route[i]);
+                }
+                printf("%d\n", endDist);
+            }
+
+            free(route);
+
+        }else{
+            int *route = (int *) malloc(max * sizeof(int));
+
+            struct tStation *stop = startStation;
+
+
+            while (stop->distance <= startDist) {
+                stop = findNextStopReverse(root, root, NULL, endDist, stationStop);
+                if (stop == NULL) {
+                    printf("nessun percorso\n");
+                    found = 0;
+                    break;         // se non trovo nodi stampo nessun percorso ed esco
+
+                }
+                if (stop->distance == endDist) {
+                    stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
+                    fillpath(route, index, stationStop);            //riempo l'array
+                    break;
+                }
+                stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
+                fillpath(route, index, stationStop);            //riempo l'array
+                index = index + 1;
+            }
+
+            if (found == 1) {
+                printf("%d ", startDist);
+                for (int i = 0; i >= index; i++) {
+                    printf("%d ", route[i]);
+                }
+                //printf("%d\n", endDist);
+            }
+
+            free(route);
+
+        }
     }
-
-    struct routeNode *routes[max]; // Array di puntatori ai nodi del grafo
-
-    // Creazione dei nodi del grafo corrispondenti ai nodi dell'albero BST
-    for (int i = 0; i < max; i++) {
-        if (searchStation(root, i) != NULL) {
-            routes[i] = createRouteNode(i); // Assegnazione peso iniziale 0 a tutti gli archi
-        } else routes[i] = NULL;
-    }
-
-        createRoutes(root, routes, max);
-
-
-
-    if (startStation->distance <= endStation->distance) {
-        findShortestPath(routes, startStation->distance, endStation->distance, max);
-    } else {
-
-        findShortestPath(routes, endStation->distance, startStation->distance, max);
-    }
-
-
-
-
 }
 
 
@@ -498,13 +480,17 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
                 } else if (strcmp(cmd, "pianifica-percorso") == 0) {
                     plnRoute(root, par[0], par[1]);
+
                 } else if (strcmp(cmd, "rottama-auto") == 0) {
                     scrCar(root, par[0], par[1]);
                 } else if (strcmp(cmd, "aggiungi-auto") == 0) {
                     addCar(root, par[0], par[1]);
                 } else if (strcmp(cmd, "stampa-albero") == 0) {
                     inorderTraversal(root);
-                } else if (strcmp(cmd, "quit") == 0) {
+                } else if (strcmp(cmd, "stampa-albero-contrario") == 0) {
+
+                    provaStampaContrario(root,par[0]);
+                }else if (strcmp(cmd, "quit") == 0) {
                     exit(0);
                 } else {
                     printf("Comando sconosciuto: %s\n", cmd);
