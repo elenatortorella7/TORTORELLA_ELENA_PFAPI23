@@ -356,7 +356,6 @@ void plnRoute(tStation *root, int startDist, int endDist) {
     int max;
     max = abs(endDist - startDist);
     int index = 0;
-    int stationStop = endDist;
     int found = 1;
 
 
@@ -365,6 +364,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
     } else {
 
         if (startDist < endDist) {
+            int stationStop = endDist;
 
 
             int *route = (int *) malloc(max * sizeof(int));
@@ -403,10 +403,12 @@ void plnRoute(tStation *root, int startDist, int endDist) {
         }else{
             int *route = (int *) malloc(max * sizeof(int));
 
+            int stationStop = startDist;
+
             struct tStation *stop = startStation;
 
 
-            while (stop->distance <= startDist) {
+            while (stop->distance >= endDist) {
                 stop = findNextStopReverse(root, root, NULL, endDist, stationStop);
                 if (stop == NULL) {
                     printf("nessun percorso\n");
@@ -426,7 +428,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
             if (found == 1) {
                 printf("%d ", startDist);
-                for (int i = 0; i >= index; i++) {
+                for (int i = 0; i <= index; i++) {
                     printf("%d ", route[i]);
                 }
                 //printf("%d\n", endDist);
@@ -444,7 +446,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
         tStation *root = NULL;    //inizializzo la radice a null
         root = createStation(0, 0, NULL);
 
-        char riga[100];
+        char riga[10000];
         while (fgets(riga, sizeof(riga), stdin) != NULL) {
             char cmd[30];
             int par[520];
