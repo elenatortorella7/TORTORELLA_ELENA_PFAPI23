@@ -20,29 +20,6 @@ typedef struct tStation {
 
 } tStation;
 
-//strct nodo del grafo
-
-struct routeNode {
-    int distance;   //univoco
-   // struct Edge* edges;
-  //  int weight;
-    struct routeNode* next;   //puntatore al prossimo nodo
-};
-
-/*struct Edge {
-    struct Node* target;
-    struct Edge* next;
-};
-
- */
-
-
-/*
-struct Route{
-    int length;
-    struct routeNode** stations;
-};
-*/
 
 
 
@@ -55,13 +32,6 @@ void inorderTraversal(tStation *root) {
     }
 }
 
-void inorderTraversalFromNodeDescending(tStation *node) {
-    if (node != NULL) {
-        inorderTraversalFromNodeDescending(node->right);
-        printf("%d ", node->distance);
-        inorderTraversalFromNodeDescending(node->left);
-    }
-}
 
 
 
@@ -80,11 +50,7 @@ tStation *searchStation(tStation *root, int distance) {
     return searchStation(root->right, distance);
 }
 
-void provaStampaContrario(tStation *root,int distance){
-    tStation *node =searchStation(root,distance);
-    inorderTraversalFromNodeDescending(node);
 
-}
 
 
 //funzione che cerca l'autonomia e ne ritorna il puntatore a intero
@@ -156,7 +122,6 @@ tStation *deleteStation(tStation *root, int distance) {
         root->right = deleteStation(root->right, distance);
     } else {
 
-        // Il nodo con il valore specifico è stato trovato, procedi all'eliminazione
         if (root->left == NULL) {
             tStation *temp = root->right;
             free(root);
@@ -179,7 +144,7 @@ tStation *deleteStation(tStation *root, int distance) {
 }
 
 
-
+//aggiungi stazione
 
 
 void addStn(tStation* root, int distance,int numCars,int aut[]) {
@@ -226,7 +191,6 @@ void addCar(tStation *root, int distance,int aut) {
             station->autonomies[station->numCars - 1] = aut;
             printf("aggiunta\n");
         }
-
     }
 }
 
@@ -258,11 +222,8 @@ void scrCar(tStation *root, int distance, int aut) {
 
              printf("rottamata\n");
         }
-
     }
 }
-
-
 
 
 //funzione che controlla la raggiungibilità
@@ -292,19 +253,37 @@ bool reachable(tStation *root, int src,int dst) {
             max = autonomies[i];
         }
     }
+
+    //printf("s:%d, d:%d,m:%d\n",src,dst,max);
+
     if (max >= effDist) {
 
         return true;
     }
-
-        return false;
-
+    return false;
 }
 
+// ricerca altri nodi raggiungibili e riempe l'array di int per il confronto
 
+void searchAndFill(struct tStation *root, struct tStation *currNode, int lastStop, int dst, int reachableArray[],int* i) {
+    if (currNode == NULL) {
+        return;
+    }
+
+    // Controlla se il nodo corrente soddisfa la condizione  lastStop è la penultima fermata
+    if ((currNode->distance < lastStop) && reachable(currNode, currNode->distance,dst) ){
+        reachableArray[*i] = currNode->distance;
+        (*i)++;
+    }
+
+    // Visita il sottoalbero sinistro e destro
+    searchAndFill(root,currNode->left,lastStop,dst, reachableArray, i);
+    searchAndFill(root,currNode->right, lastStop,dst, reachableArray, i);
+}
+
+// ricerca percorso migliore avanti
 
 struct tStation* findNextStop(struct tStation *root,struct tStation *currNode, struct tStation* nextNodeMin, int start, int dst) {
-
 
         if (currNode != NULL) {
             nextNodeMin = findNextStop(root,currNode->right, nextNodeMin, start, dst);
@@ -322,30 +301,251 @@ struct tStation* findNextStop(struct tStation *root,struct tStation *currNode, s
     }
 
 
-struct tStation* findNextStopReverse(struct tStation *root,struct tStation *currNode, struct tStation* nextNodeMin, int start, int dst) {
+
+//implementazione liste per perccorso all'indietro
+
+struct ListNode {
+    int key;
+    int stepToDest;
+    int reachable;
+         //puntatore alla stazione
+    struct ListNode* prev;
+    struct ListNode* next;
+};
 
 
-    if (currNode != NULL) {
-        nextNodeMin = findNextStop(root,currNode->right, nextNodeMin, start, dst);  //li devo invertire alla chiamata
+struct ListNode* createListNode(int key,struct tStation *station) {
+    struct ListNode* newNode = (struct ListNode*)malloc(sizeof(struct ListNode));
+    newNode->key = key;
+    newNode->stepToDest=0;
+    newNode->reachable=0;
+    newNode->prev = newNode->next = NULL;
+    return newNode;
+}
 
-        if ((currNode->distance < dst) && (currNode->distance >= start) && (reachable(root, dst,currNode->distance) == true)
-            && (nextNodeMin == NULL || currNode->distance < nextNodeMin->distance)) {
-            nextNodeMin = currNode;
-            //  printf("%d ",nextNodeMin->distance);
-        }
+// crea la lista ordinata a partire dallìalbero a con testa l'arrivo e coda la partenza
 
-        nextNodeMin = findNextStop(root,currNode->left, nextNodeMin, start, dst);
+void buildListFromTree(struct tStation* root, struct ListNode** listHead, int minVal, int maxVal) {
+    if (root == NULL) {
+        return;
     }
 
-    return nextNodeMin;
+    buildListFromTree(root->left, listHead, minVal, maxVal);
+
+    if (root->distance >= minVal && root->distance <= maxVal) {
+        struct ListNode* newNode = createListNode(root->distance, root);
+
+        // Inizializza prev e next a NULL per il nuovo nodo
+        newNode->prev = newNode->next = NULL;
+
+        if (*listHead == NULL) {
+            *listHead = newNode;
+        } else {
+            // Inserisci il nuovo nodo in ordine crescente rispetto a root->distance
+            struct ListNode* current = *listHead;
+            struct ListNode* prev = NULL;
+
+            while (current != NULL && current->key < root->distance) {
+                prev = current;
+                current = current->next;
+            }
+
+            // Inserisci il nuovo nodo tra prev e current
+            if (prev != NULL) {
+                prev->next = newNode;
+                newNode->prev = prev;
+            } else {
+                *listHead = newNode; // Se il nuovo nodo è la nuova testa
+            }
+            if (current != NULL) {
+                current->prev = newNode;
+                newNode->next = current;
+            }
+        }
+    }
+
+    buildListFromTree(root->right, listHead, minVal, maxVal);
 }
 
 
-void fillpath(int* route,int index,int station) {
+// conta passi necessari alla destinz
 
+void countSteps(struct tStation *root, struct ListNode* head) {
+    if (head == NULL) {
+        return;  // Lista vuota, niente da fare
+    }
+
+    struct ListNode* current = head->next;
+    while (current != NULL) {
+        int currentDist = current->key;
+
+        struct ListNode *smallerNode = head;
+
+       //se il nodo corrente raggiunge la testa  (destinazione)
+        if(reachable(root, currentDist, head->key)){
+            current->stepToDest = 1; //ci mette un passo
+        }
+            // se il passo != 1 (0 o >1)
+            if (current->stepToDest != 1) {
+                //finchè non scorro fino al nodo considerato
+                while (smallerNode != current) {
+                    // se il corrente raggiunge smaller e smaller può raggiungere la dest in qualche modo
+                    if (reachable(root, currentDist, smallerNode->key) && (smallerNode->stepToDest > 0)) {
+
+                        // se il nodo corrente non ha raggiungibilità o quella che ha è maggiore della nuova
+                        if (current->stepToDest == 0 || (smallerNode->stepToDest < (current->stepToDest - 1)) ) {
+                            current->stepToDest = smallerNode->stepToDest + 1;
+                        }
+
+                    }
+
+                    smallerNode = smallerNode->next;
+                }
+            }
+            current = current->next;
+    }
+}
+
+// ricava il max passi per la destinazione
+
+int getNumStepsFromSrc(struct ListNode* head) {
+    if (head == NULL) {
+        // La lista è vuota, puoi gestire questa situazione come preferisci
+        // Ad esempio, puoi restituire un valore speciale o generare un errore.
+        return -1; // Valore speciale o errore
+    }
+
+    // Inizia a scorrere la lista dal primo elemento
+    struct ListNode* current = head;
+
+    // Trova l'ultimo elemento della lista
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    // Adesso 'current' punta all'ultimo elemento della lista
+    // Restituisci il parametro (campo dati) desiderato dell'ultimo nodo
+    return current->stepToDest;
+}
+
+
+void brandsReachable(struct tStation *root, struct ListNode* destination,struct ListNode* last){
+
+    struct ListNode* current = last;   //partenza e ultimo elemento della lista
+
+    while (current != NULL) {
+        if(current==destination){
+            return;
+        }
+        if(current->reachable==1){
+
+        struct ListNode *nextNode = current->prev;
+
+        while (nextNode != NULL) {
+            if(reachable(root,current->key,nextNode->key)==true&& nextNode->stepToDest==(current->stepToDest-1)){
+                nextNode->reachable=1;
+
+            } nextNode = nextNode->prev;
+        }
+    }  // se non + raggiungibile vado al prossimo
+    current = current->prev;
+    }
+
+}
+
+
+
+void buildRoute(struct tStation *root, struct ListNode* destination, int maxSteps) {
+
+
+    struct ListNode* node = destination;
+    struct ListNode* last = NULL;
+
+    // Trova l'ultimo elemento della lista
+    while (node != NULL) {
+        last = node;
+        node = node->next;
+    }
+
+    last->reachable=1;
+
+
+
+    brandsReachable(root, destination,last);
+
+    if(destination->reachable==0){
+
+        return;
+    }
+
+
+    int array[maxSteps];
+    int currSize = 0;
+
+
+    struct ListNode* nodeToAdd = destination;
+
+    while(nodeToAdd!=NULL){
+
+        int added=0;
+        if(nodeToAdd==last){
+            array[currSize]=nodeToAdd->key;
+
+            break;
+        }else
+         {
+             struct ListNode* nodeToEval = nodeToAdd->next;
+
+             while(nodeToEval!=NULL){
+
+                 if(nodeToEval->stepToDest==(nodeToAdd->stepToDest +1)){
+
+                     if(nodeToEval->reachable==1){
+                         array[currSize]=nodeToEval->key;
+                         currSize++;
+                         nodeToAdd= nodeToEval;
+                         added=1;
+                         break;
+
+                     }
+                 } nodeToEval= nodeToEval->next;
+             }
+         }
+        if (added== 0){
+            nodeToAdd=nodeToAdd->next;}
+    }
+
+
+        for (int i = currSize-1; i >= 0; i--) {
+            printf("%d ", array[i]);
+        }
+        printf("%d\n", destination->key);
+
+
+
+}
+
+
+
+// libera la lista
+
+void freeList(struct ListNode* head) {
+    struct ListNode* current = head;
+    while (current != NULL) {
+        struct ListNode* next = current->next;
+        free(current); // Dealloca il nodo corrente
+        current = next;
+    }
+}
+
+
+
+//riempi array percorso
+    void fillpath(int* route,int index,int station) {
     route[index] =station;
+    }
 
-}
+// pianifica percorso
 
 
 void plnRoute(tStation *root, int startDist, int endDist) {
@@ -391,7 +591,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
             }
 
             if (found == 1) {
-               // printf("%d ", startDist);
+
                 for (int i = index; i >= 0; i--) {
                     printf("%d ", route[i]);
                 }
@@ -400,47 +600,31 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
             free(route);
 
-        }else{
-            int *route = (int *) malloc(max * sizeof(int));
+        } else {
 
-            int stationStop = startDist;
+            int maxSteps =0;
+            struct ListNode* destination = NULL;         //destinazione del percorso (elemento più piccolo della lista)
+            buildListFromTree(root, &destination, endDist, startDist);
+            countSteps(root, destination);
 
-            struct tStation *stop = startStation;
+            //ricava il n max di passi
+            maxSteps = getNumStepsFromSrc(destination);
 
+            if (maxSteps==0){
+                printf("nessun percorso\n");
+                freeList(destination);
 
-            while (stop->distance >= endDist) {
-                stop = findNextStopReverse(root, root, NULL, endDist, stationStop);
-                if (stop == NULL) {
-                    printf("nessun percorso\n");
-                    found = 0;
-                    break;         // se non trovo nodi stampo nessun percorso ed esco
+            }else{
 
-                }
-                if (stop->distance == endDist) {
-                    stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
-                    fillpath(route, index, stationStop);            //riempo l'array
-                    break;
-                }
-                stationStop = stop->distance;                    //la fermata è uguale al nodo di ritorno
-                fillpath(route, index, stationStop);            //riempo l'array
-                index = index + 1;
-            }
+                buildRoute(root,destination, maxSteps);
 
-            if (found == 1) {
-                printf("%d ", startDist);
-                for (int i = 0; i <= index; i++) {
-                    printf("%d ", route[i]);
-                }
-                //printf("%d\n", endDist);
-            }
-
-            free(route);
+                freeList(destination);
 
         }
     }
+
 }
-
-
+}
     int main() {
 
         tStation *root = NULL;    //inizializzo la radice a null
@@ -489,16 +673,14 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     addCar(root, par[0], par[1]);
                 } else if (strcmp(cmd, "stampa-albero") == 0) {
                     inorderTraversal(root);
-                } else if (strcmp(cmd, "stampa-albero-contrario") == 0) {
-
-                    provaStampaContrario(root,par[0]);
-                }else if (strcmp(cmd, "quit") == 0) {
+                } else if (strcmp(cmd, "quit") == 0) {
                     exit(0);
                 } else {
                     printf("Comando sconosciuto: %s\n", cmd);
                 }
             }
         }
+
 
         return 0;
 
