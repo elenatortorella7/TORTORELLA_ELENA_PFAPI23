@@ -24,13 +24,7 @@ typedef struct tStation {
 
 } tStation;
 
-tStation *findMax(tStation *node){
-    tStation *n=node;
-    while(n->right!=NULL){
-        n=n->right;
-    }
-    return n;
-}
+
 
 /*tStation *findDad(tStation *node, int distance){
 
