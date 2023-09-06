@@ -11,6 +11,7 @@
 
 
 
+
 //struttura nodo dell'albero
 
 typedef struct tStation {
@@ -23,22 +24,60 @@ typedef struct tStation {
 
 } tStation;
 
+tStation *findMax(tStation *node){
+    tStation *n=node;
+    while(n->right!=NULL){
+        n=n->right;
+    }
+    return n;
+}
 
+tStation *findDad(tStation *node, int distance){
+
+        if (node->distance == distance) {
+            return NULL;
+        } else if (node->right!=NULL && node->right->distance == distance) {
+            return node;
+        } else if (node->left!=NULL && node->left->distance == distance ) {
+            return node;
+        } else if (node->distance > distance) {
+            node = node->left;
+            return findDad(node,distance);
+        } else if (node->distance < distance) {
+            node = node->right;
+            return findDad(node,distance);
+        }else {
+            printf("errore in find dad\n");
+            return NULL;
+
+        }
+}
 
 
 //ricerca di una stazione( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
 
 tStation *searchStation(tStation *root, int distance) {
+    tStation *foundNode = NULL;
 
-    if (root == NULL || root->distance == distance) {
-        return root;
+    if (root == NULL) {
+        return NULL;
     }
 
-    if (distance < root->distance) {
-        return searchStation(root->left, distance);
+    // Visita il sottoalbero sinistro
+    foundNode = searchStation(root->left, distance);
+
+    // Se il nodo corrente ha la chiave desiderata, assegnalo a "foundNode"
+    if (root->distance == distance) {
+        foundNode = root;
+        return foundNode;
     }
 
-    return searchStation(root->right, distance);
+    // Visita il sottoalbero destro
+    if (foundNode == NULL) {
+        foundNode = searchStation(root->right, distance);
+    }
+
+    return foundNode;
 }
 
 
@@ -67,8 +106,8 @@ tStation *createStation(int distance, int numCars, const int autonomy[]) {
 
     //setta il massimo
     if(numCars!=0) {
-       // newStation->autonomies = NULL;
-       // newStation->autonomies = (int *) malloc(sizeof(int) * numCars);
+        // newStation->autonomies = NULL;
+        // newStation->autonomies = (int *) malloc(sizeof(int) * numCars);
         for (int i = 0; i < numCars; i++) {
             newStation->autonomies[i] = autonomy[i];
             if(newStation->autonomies[i]>newStation->maxAutonomy){
@@ -108,124 +147,128 @@ tStation *findMin(tStation *node) {
     return node;
 }
 
+
+
 //funzione ausiliaria per eliminare la stazione dall'autostrada
 
-tStation *deleteStation(tStation *root, int key) {
+
+
+void print_albero(struct tStation *nodo){
+    if(nodo != NULL){
+        print_albero(nodo->left);
+        printf("Stazione %d con massimo %d\n",nodo->distance,nodo->maxAutonomy);
+        print_albero(nodo->right);
+    }
+}
+
+tStation *deleteStation(tStation *root, tStation *stationToDel) {
     if (root == NULL) {
-        return root;
+        return NULL;
     }
 
-    // Ricerca del nodo da eliminare
-    if (key < root->distance) {
-        root->left = deleteStation(root->left, key);
-    } else if (key > root->distance) {
-        root->right = deleteStation(root->right, key);
+    if (stationToDel->distance < root->distance) {
+        root->left = deleteStation(root->left, stationToDel);
+    } else if (stationToDel->distance > root->distance) {
+        root->right = deleteStation(root->right, stationToDel);
     } else {
-        // Il nodo con la chiave è stato trovato, gestione dei casi di eliminazione
-        if (root->left == NULL) {
-            tStation *temp = root->right;
-            free(root);
-            return temp;  // Restituisce il nuovo nodo radice (può essere NULL se l'albero aveva un solo nodo)
-        } else if (root->right == NULL) {
-            tStation *temp = root->left;
-            free(root);
-            return temp;  // Restituisce il nuovo nodo radice
+        // Nodo da eliminare trovato
+        tStation *dad = findDad(root, stationToDel->distance);
+
+        if (stationToDel->left == NULL && stationToDel->right == NULL) {
+            // Nodo da eliminare non ha figli
+            if (dad != NULL) {
+                if (stationToDel == dad->left) {
+                    dad->left = NULL;
+                } else {
+                    dad->right = NULL;
+                }
+            } else {
+                // Nodo da eliminare è la radice
+                free(stationToDel);
+                return NULL;
+            }
+            free(stationToDel);
+        } else if (stationToDel->left == NULL) {
+            // Nodo da eliminare ha solo un figlio destro
+            tStation *temporary = stationToDel->right;
+            if (dad == NULL) {
+                // Nodo da eliminare è la radice
+                free(stationToDel);
+                return temporary;
+            } else {
+                if (stationToDel == dad->left) {
+                    dad->left = temporary;
+                } else {
+                    dad->right = temporary;
+                }
+                free(stationToDel);
+            }
+        } else if (stationToDel->right == NULL) {
+            // Nodo da eliminare ha solo un figlio sinistro
+            tStation *temporary = stationToDel->left;
+            if (dad == NULL) {
+                // Nodo da eliminare è la radice
+                free(stationToDel);
+                return temporary;
+            } else {
+                if (stationToDel == dad->left) {
+                    dad->left = temporary;
+                } else {
+                    dad->right = temporary;
+                }
+                free(stationToDel);
+            }
         } else {
-            // Il nodo ha due figli, troviamo il successore in ordine
-            tStation *temp = findMin(root->right);
+            // Nodo da eliminare ha due figli, troviamo il successore in ordine
+            tStation *temporary = findMin(stationToDel->right);
+            tStation *temporaryDad = findDad(root, temporary->distance);
 
             // Copia i dati del successore nel nodo corrente
-            root->distance = temp->distance;
-            root->numCars = temp->numCars;
-            root->maxAutonomy = temp->maxAutonomy;
-            memcpy(root->autonomies, temp->autonomies, sizeof(root->autonomies));
-            // Elimina il successore dalla sottostruttura destra
-            root->right = deleteStation(root->right, temp->distance);
+            stationToDel->distance = temporary->distance;
+            stationToDel->numCars = temporary->numCars;
+            stationToDel->maxAutonomy = temporary->maxAutonomy;
+            memcpy(stationToDel->autonomies, temporary->autonomies, sizeof(stationToDel->autonomies));
+
+            if (temporary == temporaryDad->left) {
+                // Il successore è il figlio sinistro del padre temporaneo
+                if (temporary->right != NULL) {
+                    temporaryDad->left = temporary->right;
+                } else {
+                    temporaryDad->left = NULL;
+                }
+                free(temporary);
+            } else {
+                // Il successore è il figlio destro del padre temporaneo
+                if (temporary->right != NULL) {
+                    temporaryDad->right = temporary->right;
+                } else {
+                    temporaryDad->right = NULL;
+                }
+                free(temporary);
+            }
         }
     }
-    return root;  // Restituisce il nodo radice aggiornato
+    return root;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*tStation *deleteStation(tStation *root, int distance) {
-    if (root == NULL) {
-        return root;
-    }
-
-    if (distance < root->distance) {
-        root->left = deleteStation(root->left, distance);
-    } else if (distance > root->distance) {
-        root->right = deleteStation(root->right, distance);
-    } else {
-        // Il nodo con la chiave è stato trovato
-        if (root->left == NULL) {
-            tStation *temp = root->right;
-            free(root);
-            return temp;
-        } else if (root->right == NULL) {
-            tStation *temp = root->left;
-            free(root);
-            return temp;
-        }
-
-        // Se il nodo ha due figli, trova il successore
-        tStation *temp = findMin(root->right);
-        root->distance = temp->distance;
-        root->numCars = temp->numCars;
-
-        memcpy(root->autonomies, temp->autonomies, sizeof(root->autonomies));
-
-        // Elimina il successore dalla sottostruttura destra
-        root->right = deleteStation(root->right, temp->distance);
-    }
-    return root; // Restituisci la radice aggiornata
-}
-*/
-//aggiungi stazione
 
 
 tStation *addStn(tStation* root, int distance,int numCars,int aut[]) {
-
-if(root==NULL){
-
-    root = createStation(distance, numCars, aut);
-    insert(root, root->distance,numCars,aut);
-    printf("aggiunta\n");
-     return root;                             //chiama insert, che se la radice è nullla crea
+/*if(distance==7438){
+      printf("la radice è %d\n",root->distance);
+      print_albero(root);
+  } */
 
 
-}else if(searchStation(root,distance)==NULL) {
+    if(root==NULL){
+
+        root = createStation(distance, numCars, aut);
+        insert(root, root->distance,numCars,aut);
+        printf("aggiunta\n");
+        return root;                             //chiama insert, che se la radice è nullla crea
+
+
+    }else if(searchStation(root,distance)==NULL) {
 
         tStation *newStation = NULL;
         newStation = createStation(distance, numCars, aut);
@@ -233,20 +276,42 @@ if(root==NULL){
         printf("aggiunta\n");
     }
     else printf("non aggiunta\n");
+
+    /*
+    if(distance==7438) {
+        printf("ho aggiunto 7438\n");
+        print_albero(root);
+    }
+    print_albero(root);*/
     return root;
 }
 
 
 // demolisci stazione (successivamente incorporare delete in questa funzione)
 
-void demStn(tStation* root,int distance){
-
-    if(searchStation(root,distance)==NULL){
+void demStn(tStation* root, int distance){
+    int changeRoot =0;
+    tStation *srcStn = searchStation(root, distance);
+   tStation *resultStn ;
+    if( srcStn == NULL){
         printf("non demolita\n");
-    } else {
-        root = deleteStation(root, distance);
+
+    } else
+
+    {  if(root->distance==distance){
+            changeRoot =1;
+
+        }
+
+       resultStn = deleteStation(root,srcStn);
+        if(changeRoot==1) {
+            root=resultStn;
+            changeRoot=0;
+        }
+
         printf("demolita\n");
     }
+
 
 }
 
@@ -265,16 +330,16 @@ void addCar(tStation *root, int distance,int aut) {
 
     else if(station->numCars<512){
         station->numCars++;
-      //  station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
-           station->autonomies[station->numCars - 1] = aut;
-            if(aut>station->maxAutonomy) {
-                station->maxAutonomy = aut;
-            }
-            printf("aggiunta\n");
+        //  station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
+        station->autonomies[station->numCars - 1] = aut;
+        if(aut>station->maxAutonomy) {
+            station->maxAutonomy = aut;
+        }
+        printf("aggiunta\n");
 
 
-        }else{printf("non aggiunta\n");}
-    }
+    }else{printf("non aggiunta\n");}
+}
 
 
 //funzione rottama auto
@@ -294,24 +359,24 @@ void scrCar(tStation *root, int distance, int aut) {
             int index = srcCar - station->autonomies;
 
             // Sposta gli elementi successivi a sinistra per riempire il vuoto
-                for (int j = index; j < station->numCars ; j++) {
-                    station->autonomies[j] = station->autonomies[j + 1];
-                }
-                station->numCars--;
+            for (int j = index; j < station->numCars ; j++) {
+                station->autonomies[j] = station->autonomies[j + 1];
+            }
+            station->numCars--;
 
-                //find max
-                station->maxAutonomy = station->autonomies[0];
-                for (int i = 1; i < station->numCars; i++) {
+            //find max
+            station->maxAutonomy = station->autonomies[0];
+            for (int i = 1; i < station->numCars; i++) {
 
-                    if (station->autonomies[i] > station->maxAutonomy) {
-                        station->maxAutonomy = station->autonomies[i];
-                    }
+                if (station->autonomies[i] > station->maxAutonomy) {
+                    station->maxAutonomy = station->autonomies[i];
                 }
+            }
             printf("rottamata\n");
 
-            }
         }
     }
+}
 
 
 //funzione che controlla la raggiungibilità
@@ -397,7 +462,7 @@ struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation*
 
         if(currNode->distance<=start){
 
-        nextNodeMax = findNextStopReverse( currNode->right, nextNodeMax, destNode,start);
+            nextNodeMax = findNextStopReverse( currNode->right, nextNodeMax, destNode,start);
         }
     }
 
@@ -409,11 +474,11 @@ struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation*
 
 
 //riempi array percorso
-    void fillPath(int* route, int index, int station) {
+void fillPath(int* route, int index, int station) {
     route[index] =station;
-    }
+}
 
-    void fillPathStation(tStation*route[],int index,tStation *station){
+void fillPathStation(tStation*route[],int index,tStation *station){
     route[index]=station;
 }
 
@@ -546,7 +611,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
             //ALGO 1
 
-           // int stationStop = endDist;
+            // int stationStop = endDist;
             tStation **route= (struct tStation**)malloc(MAX*sizeof(struct tStation*));
             //route[0]=endStation;  CAMBIO commentato questo
             index=0;   // CAMBIO DA 1 A 0
@@ -565,38 +630,28 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     fillPathStation(route, index, startStation);            //riempo l'array
                     break;
                 }
-             //   stationStop = stop->distance;
+                //   stationStop = stop->distance;
                 fillPathStation(route, index, stop);            //riempo l'array
                 index = index + 1;
             }
 
             if (found == 1) {
-
+                //alortmo 2
                 int steps= index+1;
 
-             struct  tStation *imprRoute[steps+1];  //prima ero solo steps
+                struct  tStation *imprRoute[steps+1];  //prima ero solo steps
 
-             // fillo imprRoute dopo i risultati di algoritmo 1
+                // fillo imprRoute dopo i risultati di algoritmo 1
 
-             for(int j=steps;j>0;j--){
+                for(int j=steps;j>0;j--){
 
-                 imprRoute[j]=route[j-1];
-             }
+                    imprRoute[j]=route[j-1];
+                }
 
                 imprRoute[0]=endStation;    //vicina
-             //   free(route);
-
-              /* for(int k= steps;k>0;k--){
-                   printf("%d ",imprRoute[k]->distance);
-               }
-               printf("%d\n",imprRoute[0]->distance);  */
-
-
-
-
                 tStation *stationToEval = findPredecessor(root,  route[index]->distance);
-                tStation *currentStation = imprRoute[steps];
-                tStation *nextStop = imprRoute[0];
+                tStation *currentStation = imprRoute[steps];//è il nuovo array current è lontana
+                tStation *nextStop = imprRoute[0];//vicina
 
 
                 int newIndex = steps-1;
@@ -606,7 +661,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     int distMax = 0;
 
                     while (stationToEval != nextStop) {
-                                         //prima cond è reachable
+                        //prima cond è reachable
                         if (currentStation->maxAutonomy>=(currentStation->distance - stationToEval->distance)
                             && ((stationToEval->maxAutonomy + currentStation->distance - stationToEval->distance) >
                                 distMax)) {
@@ -623,22 +678,20 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     newIndex--;
 
                     if(newIndex==0){
-                    imprRoute[0]=nextStop;
+                        imprRoute[0]=nextStop;
                         break;
                     }
 
                 }
 
                 // ALGO 3
-
-                tStation *betweenStation = findSuccessor(root,imprRoute[0]->distance);
-
+                tStation *betweenStation= findSuccessor(root, imprRoute[0]->distance);
                 for (int k = 0; k<=(steps-2); k++) {
 
-                   // betweenStation = findSuccessor(root, imprRoute[k]->distance);
+                    //betweenStation = findSuccessor(root, imprRoute[k]->distance);
                     while (betweenStation->distance < imprRoute[k +1]->distance) {
-                           //la prima condizione è la raggiungibilità
-                        if (betweenStation->maxAutonomy>=(betweenStation->distance - imprRoute[k+2]->distance) &&
+                        //la prima condizione è la raggiungibilità
+                        if (betweenStation->maxAutonomy>=(betweenStation->distance-imprRoute[k]->distance) &&
                             imprRoute[k+2]->maxAutonomy>= (imprRoute[k+2]->distance-betweenStation->distance)) {
                             imprRoute[k + 1] = betweenStation;
                             break;
@@ -654,85 +707,76 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                 printf("%d\n",imprRoute[0]->distance);
 
 
-              //PRINT
-
-          /*    printf("%d ",startDist);
-                for (int i = index; i>0; i--) {
-
-                    printf("%d ", route[i]->distance);
-                }
-                printf("%d\n",route[0]->distance);  */
             }
 
-          //  free(route);
+            //  free(route);
         }
 
     }
 }
 
 
-    int main() {
+int main() {
 
-        tStation *root = NULL;                                           //createStation(0, 0, NULL);
-        // root = createStation(0, 0, NULL);
+    tStation *root = NULL;                                           //createStation(0, 0, NULL);
+    // root = createStation(0, 0, NULL);
 
-        char riga[10000];
-        while (fgets(riga, sizeof(riga), stdin) != NULL) {
-            char cmd[30];
-            int par[520];
-            int numPar = 0;
+    char riga[10000];
+    while (fgets(riga, sizeof(riga), stdin) != NULL) {
+        char cmd[30];
+        int par[520];
+        int numPar = 0;
 
 
 
-            //lettura comandi e parametri
+        //lettura comandi e parametri
 
-            if (sscanf(riga, "%s", cmd) == 1) {
-                char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignora il comando e leggi il resto
+        if (sscanf(riga, "%s", cmd) == 1) {
+            char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignora il comando e leggi il resto
 
-                while (token != NULL && numPar < 520) {
-                    if (sscanf(token, "%d", &par[numPar]) == 1) {
-                        numPar++;
-                    }
-                    token = strtok(NULL, " \t\n");
+            while (token != NULL && numPar < 520) {
+                if (sscanf(token, "%d", &par[numPar]) == 1) {
+                    numPar++;
+                }
+                token = strtok(NULL, " \t\n");
+            }
+
+
+
+            //Esegui operazioni basate sul comando
+            if (strcmp(cmd, "aggiungi-stazione") == 0) {
+
+                int aut[512]; // Supponiamo che l'array di autonomie abbia al massimo 512
+                for (int i = 0; i < par[1]; i++) {
+                    aut[i] = par[i + 2];
+                }
+                if(root==NULL){
+                    root=addStn(root, par[0], par[1], aut);
+                }else {
+                    addStn(root, par[0], par[1], aut);
                 }
 
 
+            } else if (strcmp(cmd, "demolisci-stazione") == 0) {
+                demStn(root, par[0]);
 
-                //Esegui operazioni basate sul comando
-                if (strcmp(cmd, "aggiungi-stazione") == 0) {
+            } else if (strcmp(cmd, "pianifica-percorso") == 0) {
+                plnRoute(root, par[0], par[1]);
 
-                    int aut[512]; // Supponiamo che l'array di autonomie abbia al massimo 512
-                    for (int i = 0; i < par[1]; i++) {
-                        aut[i] = par[i + 2];
-                    }
-                    if(root==NULL){
-                        root=addStn(root, par[0], par[1], aut);
-                    }else {
-                        addStn(root, par[0], par[1], aut);
-                    }
-
-
-                } else if (strcmp(cmd, "demolisci-stazione") == 0) {
-                    demStn(root, par[0]);
-
-                } else if (strcmp(cmd, "pianifica-percorso") == 0) {
-                    plnRoute(root, par[0], par[1]);
-
-                } else if (strcmp(cmd, "rottama-auto") == 0) {
-                    scrCar(root, par[0], par[1]);
-                } else if (strcmp(cmd, "aggiungi-auto") == 0) {
-                    addCar(root, par[0], par[1]);
-                } else if (strcmp(cmd, "quit") == 0) {
-                    exit(0);
-                } else {
-                    printf("Comando sconosciuto: %s\n", cmd);
-                }
+            } else if (strcmp(cmd, "rottama-auto") == 0) {
+                scrCar(root, par[0], par[1]);
+            } else if (strcmp(cmd, "aggiungi-auto") == 0) {
+                addCar(root, par[0], par[1]);
+            } else if (strcmp(cmd, "quit") == 0) {
+                exit(0);
+            } else {
+                printf("Comando sconosciuto: %s\n", cmd);
             }
         }
-
-
-        return 0;
-
-
     }
 
+
+    return 0;
+
+
+}
