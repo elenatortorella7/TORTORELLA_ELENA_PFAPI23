@@ -67,30 +67,20 @@ tStation *findDad(tStation *root, int distance){
 
 //ricerca di una stazione( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
 
-tStation *searchStation(tStation *root, int distance) {
-    tStation *foundNode = NULL;
 
-    if (root == NULL) {
-        return NULL;
+ tStation *searchStation(tStation *root, int distance) {
+    while (root != NULL) {
+        if (root->distance == distance) {
+            return root;
+        } else if (root->distance > distance) {
+            root = root->left;
+        } else {
+            root = root->right;
+        }
     }
 
-    // Visita il sottoalbero sinistro
-    foundNode = searchStation(root->left, distance);
-
-    // Se il nodo corrente ha la chiave desiderata, assegnalo a "foundNode"
-    if (root->distance == distance) {
-        foundNode = root;
-        return foundNode;
-    }
-
-    // Visita il sottoalbero destro
-    if (foundNode == NULL) {
-        foundNode = searchStation(root->right, distance);
-    }
-
-    return foundNode;
+    return NULL;  // Nodo non trovato
 }
-
 
 
 
