@@ -32,7 +32,7 @@ tStation *findMax(tStation *node){
     return n;
 }
 
-tStation *findDad(tStation *node, int distance){
+/*tStation *findDad(tStation *node, int distance){
 
         if (node->distance == distance) {
             return NULL;
@@ -51,7 +51,24 @@ tStation *findDad(tStation *node, int distance){
             return NULL;
 
         }
+} */
+
+tStation *findDad(tStation *root, int distance){
+    tStation *parent = NULL;
+    tStation *current = root;
+
+    while (current != NULL && current->distance != distance) {
+        parent = current;
+        if (distance < current->distance) {
+            current = current->left;
+        } else {
+            current = current->right;
+        }
+    }
+
+    return parent;
 }
+
 
 
 //ricerca di una stazione( se la stazione esiste torna il puntatore alla stazione, altrimenti NULL)
@@ -153,14 +170,6 @@ tStation *findMin(tStation *node) {
 
 
 
-void print_albero(struct tStation *nodo){
-    if(nodo != NULL){
-        print_albero(nodo->left);
-        printf("Stazione %d con massimo %d\n",nodo->distance,nodo->maxAutonomy);
-        print_albero(nodo->right);
-    }
-}
-
 tStation *deleteStation(tStation *root, tStation *stationToDel) {
     if (root == NULL) {
         return NULL;
@@ -219,7 +228,7 @@ tStation *deleteStation(tStation *root, tStation *stationToDel) {
                 free(stationToDel);
             }
         } else {
-            // Nodo da eliminare ha due figli, troviamo il successore in ordine
+            // Nodo da eliminare ha due figli
             tStation *temporary = findMin(stationToDel->right);
             tStation *temporaryDad = findDad(root, temporary->distance);
 
@@ -254,10 +263,6 @@ tStation *deleteStation(tStation *root, tStation *stationToDel) {
 
 
 tStation *addStn(tStation* root, int distance,int numCars,int aut[]) {
-/*if(distance==7438){
-      printf("la radice è %d\n",root->distance);
-      print_albero(root);
-  } */
 
 
     if(root==NULL){
@@ -277,17 +282,11 @@ tStation *addStn(tStation* root, int distance,int numCars,int aut[]) {
     }
     else printf("non aggiunta\n");
 
-    /*
-    if(distance==7438) {
-        printf("ho aggiunto 7438\n");
-        print_albero(root);
-    }
-    print_albero(root);*/
     return root;
 }
 
 
-// demolisci stazione (successivamente incorporare delete in questa funzione)
+// demolisci stazione (successivamente incorpora delete in questa funzione)
 
 void demStn(tStation* root, int distance){
     int changeRoot =0;
@@ -337,7 +336,6 @@ void addCar(tStation *root, int distance,int aut) {
         }
         printf("aggiunta\n");
 
-
     }else{printf("non aggiunta\n");}
 }
 
@@ -381,45 +379,11 @@ void scrCar(tStation *root, int distance, int aut) {
 
 //funzione che controlla la raggiungibilità
 
-bool reachable(tStation *root, int src,int dst) {
 
-    tStation *srcStation = searchStation(root, src);
-    tStation *dstStation = searchStation(root, dst);
-
-    if (srcStation == NULL || dstStation == NULL) {
-        return false;
-    } else {
-
-        // int numCars = srcStation->numCars;
-        int effDist = abs(dst - src);
-        //int *autonomies = srcStation->autonomies;
-        if (srcStation->maxAutonomy >= effDist) {
-
-            return true;
-        }
-
-
-        return false;
-    }
-}
 
 // ricerca altri nodi raggiungibili e riempe l'array di int per il confronto
 
-void searchAndFill(struct tStation *root, struct tStation *currNode, int lastStop, int dst, int reachableArray[],int* i) {
-    if (currNode == NULL) {
-        return;
-    }
 
-    // Controlla se il nodo corrente soddisfa la condizione  lastStop è la penultima fermata
-    if ((currNode->distance < lastStop) && reachable(currNode, currNode->distance,dst) ){
-        reachableArray[*i] = currNode->distance;
-        (*i)++;
-    }
-
-    // Visita il sottoalbero sinistro e destro
-    searchAndFill(root,currNode->left,lastStop,dst, reachableArray, i);
-    searchAndFill(root,currNode->right, lastStop,dst, reachableArray, i);
-}
 
 // ricerca percorso migliore avanti
 //all'inizio c'era root
@@ -454,6 +418,7 @@ struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation*
         if ((currNode->distance <= start) && (currNode->distance > destNode->distance) && (currNode->maxAutonomy>=(currNode->distance-destNode->distance))
             && (nextNodeMax == NULL|| currNode->distance > nextNodeMax->distance)) {
             nextNodeMax = currNode;
+
             //  printf("%d ",nextNodeMax->distance);
         }
         if(currNode->distance>destNode->distance) {
@@ -490,15 +455,14 @@ struct tStation* findPredecessor(struct tStation* root, int valMagg) {
 
     while (root != NULL) {
         if (valMagg > root->distance) {
-            predecessor = root; // Il nodo corrente potrebbe essere il predecessore
-            root = root->right; // Continua la ricerca nel sottoalbero destro
+            predecessor = root;
+            root = root->right;
         } else if (valMagg < root->distance) {
-            root = root->left; // Continua la ricerca nel sottoalbero sinistro
+            root = root->left;
         } else {
-            // Il nodo con la chiave è stato trovato
+
             if (root->left != NULL) {
-                // Se esiste un sottoalbero sinistro, il predecessore sarà il massimo
-                // valore nel sottoalbero sinistro.
+
                 struct tStation* temp = root->left;
                 while (temp->right != NULL) {
                     temp = temp->right;
@@ -525,10 +489,9 @@ struct tStation* findSuccessor(struct tStation* root, int minValue) {
         } else if (minValue > root->distance) {
             root = root->right;
         } else {
-            // Il nodo con la chiave è stato trovato
+
             if (root->right != NULL) {
-                // Se esiste un sottoalbero destro, il successore sarà il minimo
-                // valore nel sottoalbero destro.
+
                 root = root->right;
                 while (root->left != NULL) {
                     root = root->left;
@@ -544,7 +507,7 @@ struct tStation* findSuccessor(struct tStation* root, int minValue) {
 
 
 
-// pianifica percorso    if(reachable(root, node->distance,minValue)&& reachable(root,prevStation,node->distance))
+// pianifica percorso
 
 void plnRoute(tStation *root, int startDist, int endDist) {
 
@@ -609,12 +572,12 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
         } else {
 
-            //ALGO 1
+            //primo percorso
 
-            // int stationStop = endDist;
+
             tStation **route= (struct tStation**)malloc(MAX*sizeof(struct tStation*));
-            //route[0]=endStation;  CAMBIO commentato questo
-            index=0;   // CAMBIO DA 1 A 0
+
+            index=0;
 
             struct tStation *stop = endStation;
 
@@ -636,7 +599,8 @@ void plnRoute(tStation *root, int startDist, int endDist) {
             }
 
             if (found == 1) {
-                //alortmo 2
+                // passo 2
+
                 int steps= index+1;
 
                 struct  tStation *imprRoute[steps+1];  //prima ero solo steps
@@ -648,10 +612,10 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     imprRoute[j]=route[j-1];
                 }
 
-                imprRoute[0]=endStation;    //vicina
+                imprRoute[0]=endStation;
                 tStation *stationToEval = findPredecessor(root,  route[index]->distance);
                 tStation *currentStation = imprRoute[steps];//è il nuovo array current è lontana
-                tStation *nextStop = imprRoute[0];//vicina
+                tStation *nextStop = imprRoute[0];
 
 
                 int newIndex = steps-1;
@@ -661,6 +625,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                     int distMax = 0;
 
                     while (stationToEval != nextStop) {
+
                         //prima cond è reachable
                         if (currentStation->maxAutonomy>=(currentStation->distance - stationToEval->distance)
                             && ((stationToEval->maxAutonomy + currentStation->distance - stationToEval->distance) >
@@ -684,12 +649,14 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
                 }
 
-                // ALGO 3
+                // passo 3
+
                 tStation *betweenStation= findSuccessor(root, imprRoute[0]->distance);
                 for (int k = 0; k<=(steps-2); k++) {
 
-                    //betweenStation = findSuccessor(root, imprRoute[k]->distance);
+
                     while (betweenStation->distance < imprRoute[k +1]->distance) {
+
                         //la prima condizione è la raggiungibilità
                         if (betweenStation->maxAutonomy>=(betweenStation->distance-imprRoute[k]->distance) &&
                             imprRoute[k+2]->maxAutonomy>= (imprRoute[k+2]->distance-betweenStation->distance)) {
@@ -706,12 +673,8 @@ void plnRoute(tStation *root, int startDist, int endDist) {
                 }
                 printf("%d\n",imprRoute[0]->distance);
 
-
             }
-
-            //  free(route);
         }
-
     }
 }
 
@@ -746,7 +709,7 @@ int main() {
             //Esegui operazioni basate sul comando
             if (strcmp(cmd, "aggiungi-stazione") == 0) {
 
-                int aut[512]; // Supponiamo che l'array di autonomie abbia al massimo 512
+                int aut[512];
                 for (int i = 0; i < par[1]; i++) {
                     aut[i] = par[i + 2];
                 }
