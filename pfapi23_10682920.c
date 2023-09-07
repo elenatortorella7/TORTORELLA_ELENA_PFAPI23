@@ -26,26 +26,7 @@ typedef struct tStation {
 
 
 
-/*tStation *findDad(tStation *node, int distance){
 
-        if (node->distance == distance) {
-            return NULL;
-        } else if (node->right!=NULL && node->right->distance == distance) {
-            return node;
-        } else if (node->left!=NULL && node->left->distance == distance ) {
-            return node;
-        } else if (node->distance > distance) {
-            node = node->left;
-            return findDad(node,distance);
-        } else if (node->distance < distance) {
-            node = node->right;
-            return findDad(node,distance);
-        }else {
-            printf("errore in find dad\n");
-            return NULL;
-
-        }
-} */
 
 tStation *findDad(tStation *root, int distance){
     tStation *parent = NULL;
@@ -79,7 +60,7 @@ tStation *findDad(tStation *root, int distance){
         }
     }
 
-    return NULL;  // Nodo non trovato
+    return NULL;
 }
 
 
@@ -96,7 +77,7 @@ int* searchCar(int *autonomies,int numCars,int autonomy){
 
 }
 
-// creazione della Stazione
+// creazione del nodo Stazione
 
 tStation *createStation(int distance, int numCars, const int autonomy[]) {
 
@@ -107,8 +88,7 @@ tStation *createStation(int distance, int numCars, const int autonomy[]) {
 
     //setta il massimo
     if(numCars!=0) {
-        // newStation->autonomies = NULL;
-        // newStation->autonomies = (int *) malloc(sizeof(int) * numCars);
+
         for (int i = 0; i < numCars; i++) {
             newStation->autonomies[i] = autonomy[i];
             if(newStation->autonomies[i]>newStation->maxAutonomy){
@@ -123,7 +103,7 @@ tStation *createStation(int distance, int numCars, const int autonomy[]) {
 
 }
 
-//inserimento della Stazione nell'autostrada
+//inserimento della Stazione nell'autostrada (nodo nell'albero)
 
 tStation *insert(tStation *root, int distance, int numCars, int aut[]) {
     if (root == NULL) {
@@ -139,7 +119,7 @@ tStation *insert(tStation *root, int distance, int numCars, int aut[]) {
     return root;
 }
 
-//funzione ausiliaria trova successore
+//funzione ausiliaria
 
 tStation *findMin(tStation *node) {
     while (node->left != NULL) {
@@ -150,9 +130,7 @@ tStation *findMin(tStation *node) {
 
 
 
-//funzione ausiliaria per eliminare la stazione dall'autostrada
-
-
+//funzione ausiliaria per eliminare la stazione dall'autostrada  (nodo dall'albero)
 
 tStation *deleteStation(tStation *root, tStation *stationToDel) {
     if (root == NULL) {
@@ -216,7 +194,7 @@ tStation *deleteStation(tStation *root, tStation *stationToDel) {
             tStation *temporary = findMin(stationToDel->right);
             tStation *temporaryDad = findDad(root, temporary->distance);
 
-            // Copia i dati del successore nel nodo corrente
+            // Copia i dati
             stationToDel->distance = temporary->distance;
             stationToDel->numCars = temporary->numCars;
             stationToDel->maxAutonomy = temporary->maxAutonomy;
@@ -254,7 +232,7 @@ tStation *addStn(tStation* root, int distance,int numCars,int aut[]) {
         root = createStation(distance, numCars, aut);
         insert(root, root->distance,numCars,aut);
         printf("aggiunta\n");
-        return root;                             //chiama insert, che se la radice è nullla crea
+        return root;
 
 
     }else if(searchStation(root,distance)==NULL) {
@@ -270,7 +248,7 @@ tStation *addStn(tStation* root, int distance,int numCars,int aut[]) {
 }
 
 
-// demolisci stazione (successivamente incorpora delete in questa funzione)
+// demolisci stazione chiama delete
 
 void demStn(tStation* root, int distance){
     int changeRoot =0;
@@ -313,7 +291,6 @@ void addCar(tStation *root, int distance,int aut) {
 
     else if(station->numCars<512){
         station->numCars++;
-        //  station->autonomies = realloc(station->autonomies, sizeof(int) * station->numCars);
         station->autonomies[station->numCars - 1] = aut;
         if(aut>station->maxAutonomy) {
             station->maxAutonomy = aut;
@@ -346,7 +323,7 @@ void scrCar(tStation *root, int distance, int aut) {
             }
             station->numCars--;
 
-            //find max
+            //ritrova il massimo e lo risetta
             station->maxAutonomy = station->autonomies[0];
             for (int i = 1; i < station->numCars; i++) {
 
@@ -361,16 +338,10 @@ void scrCar(tStation *root, int distance, int aut) {
 }
 
 
-//funzione che controlla la raggiungibilità
-
-
-
-// ricerca altri nodi raggiungibili e riempe l'array di int per il confronto
-
 
 
 // ricerca percorso migliore avanti
-//all'inizio c'era root
+
 
 struct tStation* findNextStop(struct tStation *currNode, struct tStation* nextNodeMin,tStation* destNode,int start) {
 
@@ -392,10 +363,10 @@ struct tStation* findNextStop(struct tStation *currNode, struct tStation* nextNo
     return nextNodeMin;
 }
 
-
+// ricerca primo percorso in indietro
 
 struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation* nextNodeMax, tStation* destNode,int start) {
-    // è grande start è grande dst è piccola
+
 
     if (currNode != NULL) {
 
@@ -403,7 +374,7 @@ struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation*
             && (nextNodeMax == NULL|| currNode->distance > nextNodeMax->distance)) {
             nextNodeMax = currNode;
 
-            //  printf("%d ",nextNodeMax->distance);
+
         }
         if(currNode->distance>destNode->distance) {
             nextNodeMax = findNextStopReverse(currNode->left, nextNodeMax, destNode, start);
@@ -422,17 +393,18 @@ struct tStation* findNextStopReverse(struct tStation *currNode, struct tStation*
 
 
 
-//riempi array percorso
+//riempi array percorso avanti
 void fillPath(int* route, int index, int station) {
     route[index] =station;
 }
 
+//riempi array percorso indietro
 void fillPathStation(tStation*route[],int index,tStation *station){
     route[index]=station;
 }
 
 
-
+//trova predecessore (vicino più piccolo)
 
 struct tStation* findPredecessor(struct tStation* root, int valMagg) {
     struct tStation* predecessor = NULL;
@@ -461,7 +433,7 @@ struct tStation* findPredecessor(struct tStation* root, int valMagg) {
 }
 
 
-
+//trova successore (vicino più grande)
 
 struct tStation* findSuccessor(struct tStation* root, int minValue) {
     struct tStation* successor = NULL;
@@ -499,7 +471,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
     tStation *endStation = searchStation(root, endDist);
 
 
-    int max;//forse dopo porre=0
+    int max;
     max = abs(endDist - startDist);
     int index = 0;
     int found = 1;
@@ -587,7 +559,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
                 int steps= index+1;
 
-                struct  tStation *imprRoute[steps+1];  //prima ero solo steps
+                struct  tStation *imprRoute[steps+1];
 
                 // fillo imprRoute dopo i risultati di algoritmo 1
 
@@ -598,7 +570,7 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
                 imprRoute[0]=endStation;
                 tStation *stationToEval = findPredecessor(root,  route[index]->distance);
-                tStation *currentStation = imprRoute[steps];//è il nuovo array current è lontana
+                tStation *currentStation = imprRoute[steps];
                 tStation *nextStop = imprRoute[0];
 
 
@@ -665,8 +637,8 @@ void plnRoute(tStation *root, int startDist, int endDist) {
 
 int main() {
 
-    tStation *root = NULL;                                           //createStation(0, 0, NULL);
-    // root = createStation(0, 0, NULL);
+    tStation *root = NULL;
+
 
     char riga[10000];
     while (fgets(riga, sizeof(riga), stdin) != NULL) {
@@ -679,7 +651,7 @@ int main() {
         //lettura comandi e parametri
 
         if (sscanf(riga, "%s", cmd) == 1) {
-            char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignora il comando e leggi il resto
+            char *token = strtok(riga + strlen(cmd) + 1, " \t\n"); // Ignoro il comando e leggo il resto
 
             while (token != NULL && numPar < 520) {
                 if (sscanf(token, "%d", &par[numPar]) == 1) {
@@ -690,7 +662,7 @@ int main() {
 
 
 
-            //Esegui operazioni basate sul comando
+            //Eseguo operazioni basate sul comando
             if (strcmp(cmd, "aggiungi-stazione") == 0) {
 
                 int aut[512];
